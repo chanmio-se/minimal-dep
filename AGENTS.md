@@ -25,7 +25,7 @@
 - 通常リクエストには完全な HTML、HTMX リクエストにはフラグメントを返す。フォームは通常送信にフォールバックできる形を保つ。
 - POST / PUT / DELETE 相当のリクエストには常に CSRF トークンを要求する。
 - 外部 Go ライブラリは追加しない。追加する場合は ADR に採用理由を記録し、Linter の承認リストを更新する。
-- HTMX は `package.json` / `package-lock.json` でバージョン固定し、`npm run sync:htmx` で `web/static/js` に同梱する。更新時は ADR のハッシュも同じ変更に含め、E2E テスト結果を確認する。
+- HTMX は `package.json` / `package-lock.json` でバージョン固定し、`npm run sync:htmx` で `web/static/js` に同梱する。更新時は E2E テスト結果を確認する。Dependabot の npm 更新 PR では `.github/workflows/sync-dependabot-htmx.yml` が同期結果を PR ブランチへコミットする。
 - GitHub Actions の依存は `.github/workflows/actions.lock` で固定する。`uses:` を変更した場合は `gh actions-lock` を再実行し、lockfile を同じ変更に含める。lockfile は手編集しない。
 
 ## Verification
@@ -43,7 +43,7 @@ go test ./...
 
 workflow を変更した場合は `gh actions-lock --verify` も実行する。CI では `.github/workflows/verify-lockfile.yml` が同じ検査を pull request ごとに実行する。
 
-HTMX を更新した場合は `npm ci --ignore-scripts && npm run sync:htmx` を実行し、同梱 JS と ADR の差分を確認する。CI の `htmx` job が同じ検査と `go test ./tests/...` を実行する。
+HTMX を更新した場合は `npm ci --ignore-scripts && npm run sync:htmx` を実行し、同梱 JS と ADR の差分を確認する。CI の `htmx` job が同じ検査と `go test ./tests/...` を実行する。Dependabot の htmx 更新 PR では `sync-dependabot-htmx.yml` が CI 完了後に同期・コミットし、`workflow_dispatch` で CI を再実行する。
 
 ## Completion Criteria
 

@@ -32,7 +32,7 @@ spec/quint        Quint の状態遷移モデル
 docs/decisions    設計判断の ADR
 scripts           HTMX 同梱ファイルの同期スクリプト
 package.json      HTMX 更新用の npm 開発依存
-.github/workflows CI と lockfile 検証の workflow
+.github/workflows CI / lockfile 検証 / HTMX 同期の workflow
 ```
 
 ## 起動
@@ -84,7 +84,7 @@ Quint のモデル検査とトレース再生は `.github/workflows/ci.yml` で�
 
 GitHub Actions の依存は `.github/workflows/actions.lock` に固定しています。workflow の `uses:` を変更した場合は `gh actions-lock` を再実行し、生成された lockfile をコミットしてください。lockfile は手編集しません。`.github/workflows/verify-lockfile.yml` が push と pull request で整合性を検証します（ローカルでは `gh actions-lock --verify`）。`.github/dependabot.yml` がアクションの更新を確認し、lockfile も同じ PR で更新します。採用理由は [ADR-0005](docs/decisions/0005-actions-lockfile.md) を参照してください。
 
-HTMX は `package.json` / `package-lock.json` でバージョン固定しています。更新 PR では `npm ci --ignore-scripts` の後に `npm run sync:htmx` を実行し、`web/static/js/htmx.min.js`を同じ変更に含めてください。CI の `htmx` job が `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で差分がないことを確認し、`go test ./tests/...` も実行します。ローカルでも同じコマンドで確認できます。
+HTMX は `package.json` / `package-lock.json` でバージョン固定しています。Dependabot が `htmx.org` の更新 PR を作ると、`.github/workflows/sync-dependabot-htmx.yml` が CI 完了後に `npm ci --ignore-scripts` と `npm run sync:htmx` を実行し、`web/static/js/htmx.min.js` と [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md) のハッシュを PR へコミットします。その後 `workflow_dispatch` で CI を再実行します。手動で更新する場合も同じコマンドを実行して差分をコミットしてください。CI の `htmx` job が `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で差分がないことを確認し、`go test ./tests/...` も実行します。
 
 ## モジュール追加
 

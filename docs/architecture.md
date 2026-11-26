@@ -422,7 +422,7 @@ HTTP Status、Header、Response Body を検証する。
 
 HTMX は外部 JavaScript ライブラリとして扱う。
 
-バージョンは `package.json` / `package-lock.json` の devDependency で固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製する。npm は更新時の開発ツールとし、アプリの実行時や通常の Go ビルドには使わない。Dependabot の npm 更新 PR では同期スクリプトを実行して同梱ファイルと ADR を更新し、CI で差分がないことを検証する。更新時には変更内容と E2E テスト結果を確認する。
+バージョンは `package.json` / `package-lock.json` の devDependency で固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製する。npm は更新時の開発ツールとし、アプリの実行時や通常の Go ビルドには使わない。Dependabot の npm 更新 PR では `workflow_run` でデフォルトブランチの同期スクリプトを実行し、同梱ファイルを PR ブランチへコミットした上で CI を再実行する。CI では差分がないことを検証する。更新時には変更内容と E2E テスト結果を確認する。
 
 ## 12. Security
 
