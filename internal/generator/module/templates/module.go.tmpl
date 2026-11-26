@@ -1,0 +1,61 @@
+// Package {{.Name}} wires the {{.Name}} module and registers its routes.
+package {{.Name}}
+
+import (
+	"embed"
+	"errors"
+	"log/slog"
+	"net/http"
+
+	"minimal-dep/internal/modules/{{.Name}}/api"
+	"minimal-dep/internal/modules/{{.Name}}/handler"
+	"minimal-dep/internal/modules/{{.Name}}/repository"
+	"minimal-dep/internal/modules/{{.Name}}/usecase"
+	"minimal-dep/internal/platform/templates"
+)
+
+//go:embed templates
+var templateFS embed.FS
+
+// Config holds dependencies supplied by the composition root.
+type Config struct {
+	Repo   repository.Repository
+	Logger *slog.Logger
+}
+
+// Module is the {{.Name}} module boundary.
+type Module struct {
+	handler *handler.Handler
+	usecase *usecase.Usecase
+}
+
+// New assembles the module.
+func New(cfg Config) (*Module, error) {
+	if cfg.Repo == nil {
+		return nil, errors.New("{{.Name}} repository is required")
+	}
+	if cfg.Logger == nil {
+		return nil, errors.New("{{.Name}} logger is required")
+	}
+	renderer, err := templates.New(templates.LayoutFS(), "layouts/app.html", templateFS,
+		"templates/pages/*.html", "templates/fragments/*.html")
+	if err != nil {
+		return nil, err
+	}
+	uc := usecase.New(cfg.Repo)
+	return &Module{
+		handler: handler.New(uc, renderer, cfg.Logger),
+		usecase: uc,
+	}, nil
+}
+
+// Register adds routes to mux. Authentication and CSRF come from the
+// application's standard middleware chain.
+func (m *Module) Register(mux *http.ServeMux) {
+	mux.HandleFunc("GET /{{.Name}}", m.handler.Index)
+	mux.HandleFunc("POST /{{.Name}}", m.handler.Create)
+	mux.HandleFunc("POST /{{.Name}}/{id}/rename", m.handler.Rename)
+}
+
+// API returns the public module contract.
+func (m *Module) API() api.Service { return m.usecase }

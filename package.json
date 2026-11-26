@@ -1,0 +1,11 @@
+{
+  "name": "minimal-dep-htmx-vendor",
+  "private": true,
+  "description": "Development-only tooling for updating the vendored HTMX asset",
+  "devDependencies": {
+    "htmx.org": "2.0.6"
+  },
+  "scripts": {
+    "sync:htmx": "node scripts/sync-htmx.mjs"
+  }
+}

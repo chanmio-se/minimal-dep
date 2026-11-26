@@ -1,0 +1,63 @@
+package repository
+
+import (
+	"context"
+	"errors"
+	"sort"
+	"sync"
+
+	"minimal-dep/internal/modules/{{.Name}}/domain"
+)
+
+// Memory is an in-memory Repository for development and tests.
+type Memory struct {
+	mu    sync.RWMutex
+	items map[string]domain.Item
+}
+
+// NewMemory builds an empty in-memory repository.
+func NewMemory() *Memory { return &Memory{items: make(map[string]domain.Item)} }
+
+// Create stores an item.
+func (m *Memory) Create(_ context.Context, item domain.Item) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.items[item.ID] = item
+	return nil
+}
+
+// ListByOwner returns items owned by ownerID, sorted by ID.
+func (m *Memory) ListByOwner(_ context.Context, ownerID string) ([]domain.Item, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	items := make([]domain.Item, 0, len(m.items))
+	for _, item := range m.items {
+		if item.OwnerID == ownerID {
+			items = append(items, item)
+		}
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].ID < items[j].ID })
+	return items, nil
+}
+
+// FindByID returns an item by ID.
+func (m *Memory) FindByID(_ context.Context, id string) (domain.Item, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	item, ok := m.items[id]
+	if !ok {
+		return domain.Item{}, ErrNotFound
+	}
+	return item, nil
+}
+
+// Save replaces a stored item.
+func (m *Memory) Save(_ context.Context, item domain.Item) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if _, ok := m.items[item.ID]; !ok {
+		return errors.New("item not found")
+	}
+	m.items[item.ID] = item
+	return nil
+}

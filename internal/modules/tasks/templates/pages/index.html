@@ -1,0 +1,17 @@
+{{define "tasks/page/index"}}
+<section>
+  <h1>タスク</h1>
+  <form class="task-form" method="post" action="/tasks" hx-post="/tasks" hx-target="#task-list" hx-swap="outerHTML">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <label for="title">新しいタスク</label>
+    <input id="title" name="title" type="text" required maxlength="200">
+    <button type="submit">追加</button>
+  </form>
+  {{template "tasks/list" .}}
+  <form method="post" action="/logout" hx-post="/logout">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <button type="submit" class="secondary">ログアウト</button>
+  </form>
+</section>
+{{end}}
+{{define "content"}}{{template "tasks/page/index" .}}{{end}}

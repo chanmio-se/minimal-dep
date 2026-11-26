@@ -1,0 +1,13 @@
+{{.LBrace}}define "{{.Name}}/page/index"{{.RBrace}}
+<section>
+  <h1>{{.Pascal}}</h1>
+  <form method="post" action="/{{.Name}}" hx-post="/{{.Name}}" hx-target="#{{.Name}}-list" hx-swap="outerHTML">
+    <input type="hidden" name="csrf_token" value="{{.LBrace}}.CSRFToken{{.RBrace}}">
+    <label for="name">名前</label>
+    <input id="name" name="name" type="text" required maxlength="200">
+    <button type="submit">追加</button>
+  </form>
+  {{.LBrace}}template "{{.Name}}/list" .{{.RBrace}}
+</section>
+{{.LBrace}}end{{.RBrace}}
+{{.LBrace}}define "content"{{.RBrace}}{{.LBrace}}template "{{.Name}}/page/index" .{{.RBrace}}{{.LBrace}}end{{.RBrace}}

@@ -1,0 +1,15 @@
+{{define "identity/page/login"}}
+<section class="card">
+  <h1>ログイン</h1>
+  <p>メールアドレスと名前を入力してください。初回はユーザーが作成されます。</p>
+  <form method="post" action="/login">
+    <input type="hidden" name="csrf_token" value="{{.CSRFToken}}">
+    <label for="email">メールアドレス</label>
+    <input id="email" name="email" type="email" required autocomplete="email">
+    <label for="name">名前</label>
+    <input id="name" name="name" type="text" required maxlength="100">
+    <button type="submit">ログイン</button>
+  </form>
+</section>
+{{end}}
+{{define "content"}}{{template "identity/page/login" .}}{{end}}

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  go:
+    name: Go build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.1.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - run: go build ./...
+      - run: go vet ./...
+      - run: go run ./cmd/archlint .
+      - run: go test ./...
+
+  quint:
+    name: Quint specs and trace drivers
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.1.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '26.13.1'
+      # Apalache, used by `quint verify`, requires a Java runtime.
+      - uses: actions/setup-java@v6.3.0
+        with:
+          distribution: temurin
+          java-version: '25.0.5'
+      - run: npm i -g @informalsystems/quint@0.34.0
+      - name: Parse, typecheck and simulate models
+        run: |
+          for model in session authz csrf; do
+            quint parse "spec/quint/$model.qnt"
+            quint typecheck "spec/quint/$model.qnt"
+            quint run "spec/quint/$model.qnt" --max-steps=10
+          done
+      - name: Bounded model checking
+        run: |
+          for model in session authz csrf; do
+            quint verify "spec/quint/$model.qnt" --max-steps=10
+          done
+      - name: Replay Quint traces with Go drivers
+        run: go test ./tests/quint/...
+
+  htmx:
+    name: Vendored HTMX matches npm lockfile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '26.13.1'
+      - run: npm ci --ignore-scripts
+      - run: npm run sync:htmx
+      - name: Verify vendored asset and ADR are committed
+        run: git diff --exit-code -- web/static/js/htmx.min.js docs/decisions/0001-standard-library-and-htmx.md
+      - uses: actions/setup-go@v7.1.0
+        with:
+          go-version-file: go.mod
+      - name: Run integration tests
+        run: go test ./tests/...

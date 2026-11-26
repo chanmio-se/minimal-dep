@@ -1,0 +1,18 @@
+// Package api is the public contract of the {{.Name}} module.
+package api
+
+import (
+	"context"
+
+	"minimal-dep/internal/modules/{{.Name}}/domain"
+)
+
+// Item is the public representation of a {{.Name}} item.
+type Item = domain.Item
+
+// Service is the functionality exposed to other modules.
+type Service interface {
+	List(ctx context.Context, ownerID string) ([]Item, error)
+	Create(ctx context.Context, ownerID, name string) (Item, error)
+	Rename(ctx context.Context, ownerID, id, name string) error
+}

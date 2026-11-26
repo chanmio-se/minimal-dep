@@ -1,0 +1,16 @@
+{{.LBrace}}define "{{.Name}}/list"{{.RBrace}}
+<div id="{{.Name}}-list">
+  {{.LBrace}}range .Items{{.RBrace}}
+  <div class="item">
+    <span>{{.LBrace}}.Name{{.RBrace}}</span>
+    <form method="post" action="/{{.Name}}/{{.LBrace}}.ID{{.RBrace}}/rename" hx-post="/{{.Name}}/{{.LBrace}}.ID{{.RBrace}}/rename" hx-target="#{{.Name}}-list" hx-swap="outerHTML">
+      <input type="hidden" name="csrf_token" value="{{.LBrace}}$.CSRFToken{{.RBrace}}">
+      <input name="name" type="text" required maxlength="200" value="{{.LBrace}}.Name{{.RBrace}}">
+      <button type="submit">更新</button>
+    </form>
+  </div>
+  {{.LBrace}}else{{.RBrace}}
+  <p class="empty">項目はありません。</p>
+  {{.LBrace}}end{{.RBrace}}
+</div>
+{{.LBrace}}end{{.RBrace}}

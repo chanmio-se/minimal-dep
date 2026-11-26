@@ -1,0 +1,22 @@
+{{define "app/layout"}}
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{.CSRFToken}}">
+  <title>minimal-dep</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+  <script src="/static/js/htmx.min.js" defer></script>
+  <script src="/static/js/csrf.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/tasks">minimal-dep</a>
+  </header>
+  <main id="main" class="container">
+    {{template "content" .}}
+  </main>
+</body>
+</html>
+{{end}}

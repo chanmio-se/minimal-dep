@@ -1,0 +1,47 @@
+package usecase
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"minimal-dep/internal/modules/{{.Name}}/repository"
+)
+
+func TestCreateListAndRename(t *testing.T) {
+	ctx := context.Background()
+	uc := New(repository.NewMemory())
+	item, err := uc.Create(ctx, "u1", "first")
+	if err != nil {
+		t.Fatalf("Create() error = %v", err)
+	}
+	items, err := uc.List(ctx, "u1")
+	if err != nil || len(items) != 1 {
+		t.Fatalf("List() = %+v, %v", items, err)
+	}
+	if err := uc.Rename(ctx, "u1", item.ID, "second"); err != nil {
+		t.Fatalf("Rename() error = %v", err)
+	}
+	items, err = uc.List(ctx, "u1")
+	if err != nil || len(items) != 1 || items[0].Name != "second" {
+		t.Fatalf("List() after Rename() = %+v, %v", items, err)
+	}
+}
+
+func TestRenameRejectsAnotherOwner(t *testing.T) {
+	ctx := context.Background()
+	uc := New(repository.NewMemory())
+	item, err := uc.Create(ctx, "u1", "first")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := uc.Rename(ctx, "u2", item.ID, "second"); !errors.Is(err, ErrForbidden) {
+		t.Fatalf("Rename(u2) error = %v, want ErrForbidden", err)
+	}
+}
+
+func TestCreateRejectsEmptyName(t *testing.T) {
+	if _, err := New(repository.NewMemory()).Create(context.Background(), "u1", " "); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("Create() error = %v, want ErrInvalidInput", err)
+	}
+}

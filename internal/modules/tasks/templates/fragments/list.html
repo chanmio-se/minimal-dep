@@ -1,0 +1,17 @@
+{{define "tasks/list"}}
+<div id="task-list">
+  {{range .Tasks}}
+  <div class="task{{if .Done}} done{{end}}">
+    <span class="task-title">{{.Title}}</span>
+    {{if not .Done}}
+    <form method="post" action="/tasks/{{.ID}}/complete" hx-post="/tasks/{{.ID}}/complete" hx-target="#task-list" hx-swap="outerHTML">
+      <input type="hidden" name="csrf_token" value="{{$.CSRFToken}}">
+      <button type="submit">完了</button>
+    </form>
+    {{end}}
+  </div>
+  {{else}}
+  <p class="empty">タスクはありません。</p>
+  {{end}}
+</div>
+{{end}}

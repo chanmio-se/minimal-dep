@@ -1,0 +1,72 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+  color: #1f2937;
+  background: #f8fafc;
+}
+
+body { margin: 0; }
+
+.site-header {
+  padding: 0.75rem 1.5rem;
+  background: #1e293b;
+}
+
+.brand {
+  color: #f8fafc;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 48rem;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.card, .task-form {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+label { display: block; margin-top: 0.5rem; font-weight: 600; }
+
+input[type="text"], input[type="email"] {
+  width: 100%;
+  max-width: 24rem;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
+}
+
+button {
+  margin-top: 0.75rem;
+  padding: 0.4rem 1rem;
+  border: 0;
+  border-radius: 0.25rem;
+  color: #fff;
+  background: #2563eb;
+  cursor: pointer;
+}
+
+button.secondary { background: #475569; }
+
+.task {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+}
+
+.task.done .task-title { color: #94a3b8; text-decoration: line-through; }
+.task button { margin: 0; }
+.empty { color: #64748b; }

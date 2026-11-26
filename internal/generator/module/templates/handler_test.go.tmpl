@@ -1,0 +1,124 @@
+package handler
+
+import (
+	"io"
+	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"regexp"
+	"strings"
+	"testing"
+
+	"minimal-dep/internal/modules/{{.Name}}/repository"
+	"minimal-dep/internal/modules/{{.Name}}/usecase"
+	"minimal-dep/internal/platform/http/middleware"
+	"minimal-dep/internal/platform/templates"
+)
+
+func newTestHandler(t *testing.T) http.Handler {
+	t.Helper()
+	renderer, err := templates.New(templates.LayoutFS(), "layouts/app.html", os.DirFS("../templates"),
+		"pages/*.html", "fragments/*.html")
+	if err != nil {
+		t.Fatal(err)
+	}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	h := New(usecase.New(repository.NewMemory()), renderer, logger)
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /{{.Name}}", h.Index)
+	mux.HandleFunc("POST /{{.Name}}", h.Create)
+	mux.HandleFunc("POST /{{.Name}}/{id}/rename", h.Rename)
+	auth := middleware.Auth(func(r *http.Request) (middleware.Principal, bool) {
+		id := r.Header.Get("X-Test-User")
+		return middleware.Principal{ID: id}, id != ""
+	}, nil)
+	return middleware.Chain(middleware.CSRF(false), auth)(mux)
+}
+
+func getPage(t *testing.T, h http.Handler, user string) (*httptest.ResponseRecorder, string) {
+	t.Helper()
+	req := httptest.NewRequest("GET", "/{{.Name}}", nil)
+	req.Header.Set("X-Test-User", user)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET status = %d, want 200", rec.Code)
+	}
+	return rec, rec.Body.String()
+}
+
+func csrfToken(t *testing.T, body string) string {
+	t.Helper()
+	match := regexp.MustCompile(`name="csrf_token" value="([^"]+)"`).FindStringSubmatch(body)
+	if match == nil {
+		t.Fatalf("CSRF token not found in %q", body)
+	}
+	return match[1]
+}
+
+func csrfCookie(t *testing.T, rec *httptest.ResponseRecorder) *http.Cookie {
+	t.Helper()
+	for _, c := range rec.Result().Cookies() {
+		if c.Name == "csrf_token" {
+			return c
+		}
+	}
+	t.Fatal("CSRF cookie not set")
+	return nil
+}
+
+func postForm(t *testing.T, h http.Handler, user, target string, form url.Values, cookie *http.Cookie) *httptest.ResponseRecorder {
+	t.Helper()
+	req := httptest.NewRequest("POST", target, strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("X-Test-User", user)
+	if cookie != nil {
+		req.AddCookie(cookie)
+	}
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, req)
+	return rec
+}
+
+func TestUnauthenticatedRequest(t *testing.T) {
+	rec := httptest.NewRecorder()
+	newTestHandler(t).ServeHTTP(rec, httptest.NewRequest("GET", "/{{.Name}}", nil))
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/login" {
+		t.Fatalf("unauthenticated status = %d, location = %q", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestCSRFRequired(t *testing.T) {
+	rec := postForm(t, newTestHandler(t), "u1", "/{{.Name}}", url.Values{"name": {"first"}}, nil)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("missing CSRF token status = %d, want 403", rec.Code)
+	}
+}
+
+func TestCreateAndAuthorization(t *testing.T) {
+	h := newTestHandler(t)
+	rec, body := getPage(t, h, "u1")
+	cookie := csrfCookie(t, rec)
+	token := csrfToken(t, body)
+
+	rec = postForm(t, h, "u1", "/{{.Name}}", url.Values{
+		"csrf_token": {token}, "name": {"first"},
+	}, cookie)
+	if rec.Code != http.StatusSeeOther {
+		t.Fatalf("create status = %d, body = %q", rec.Code, rec.Body.String())
+	}
+
+	_, body = getPage(t, h, "u1")
+	match := regexp.MustCompile(`action="/{{.Name}}/([a-f0-9]+)/rename"`).FindStringSubmatch(body)
+	if match == nil {
+		t.Fatalf("item id not found in %q", body)
+	}
+	rec = postForm(t, h, "u2", "/{{.Name}}/"+match[1]+"/rename", url.Values{
+		"csrf_token": {token}, "name": {"hijacked"},
+	}, cookie)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("another owner status = %d, want 403", rec.Code)
+	}
+}

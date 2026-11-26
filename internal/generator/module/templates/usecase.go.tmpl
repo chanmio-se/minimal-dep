@@ -1,0 +1,79 @@
+// Package usecase implements {{.Name}} application operations.
+package usecase
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"strings"
+
+	"minimal-dep/internal/modules/{{.Name}}/domain"
+	"minimal-dep/internal/modules/{{.Name}}/repository"
+)
+
+// Layer errors translated by the handler.
+var (
+	ErrInvalidInput = domain.ErrInvalidInput
+	ErrNotFound     = errors.New("{{.Name}} item not found")
+	ErrForbidden    = errors.New("item belongs to another owner")
+)
+
+// Usecase owns {{.Name}} operations, including per-operation authorization.
+type Usecase struct {
+	repo repository.Repository
+}
+
+// New builds a usecase.
+func New(repo repository.Repository) *Usecase { return &Usecase{repo: repo} }
+
+// List returns the caller's items.
+func (u *Usecase) List(ctx context.Context, ownerID string) ([]domain.Item, error) {
+	if strings.TrimSpace(ownerID) == "" {
+		return nil, fmt.Errorf("%w: owner is required", ErrInvalidInput)
+	}
+	return u.repo.ListByOwner(ctx, ownerID)
+}
+
+// Create adds an item owned by the caller.
+func (u *Usecase) Create(ctx context.Context, ownerID, name string) (domain.Item, error) {
+	item, err := domain.NewItem(newID(), ownerID, name)
+	if err != nil {
+		return domain.Item{}, err
+	}
+	if err := u.repo.Create(ctx, item); err != nil {
+		return domain.Item{}, fmt.Errorf("persist item: %w", err)
+	}
+	return item, nil
+}
+
+// Rename changes the caller's item. Authorization belongs here, not in HTTP.
+func (u *Usecase) Rename(ctx context.Context, ownerID, id, name string) error {
+	item, err := u.repo.FindByID(ctx, id)
+	if errors.Is(err, repository.ErrNotFound) {
+		return ErrNotFound
+	}
+	if err != nil {
+		return fmt.Errorf("find item: %w", err)
+	}
+	if item.OwnerID != ownerID {
+		return ErrForbidden
+	}
+	updated, err := domain.NewItem(item.ID, item.OwnerID, name)
+	if err != nil {
+		return err
+	}
+	if err := u.repo.Save(ctx, updated); err != nil {
+		return fmt.Errorf("persist item: %w", err)
+	}
+	return nil
+}
+
+func newID() string {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		panic("crypto/rand unavailable: " + err.Error())
+	}
+	return hex.EncodeToString(buf)
+}
