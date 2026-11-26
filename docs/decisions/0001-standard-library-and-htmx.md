@@ -10,14 +10,14 @@
 ## Decision
 
 - HTTP / ルーティング / HTML / DB / ログ / テストには Go 標準ライブラリのみを使う。
-- 画面更新には HTMX `2.0.6` を利用し、`web/static/js/htmx.min.js` にバージョン固定で同梱する。
+- 画面更新には HTMX `2.0.11` を利用し、`web/static/js/htmx.min.js` にバージョン固定で同梱する。
 - HTMX は外部 JavaScript ライブラリとして扱い、Go モジュールの依存には追加しない。
 - `package.json` と `package-lock.json` に `htmx.org` を devDependency として固定する。npm は同梱ファイルの更新時だけ使う開発ツールとし、アプリの実行時や通常の Go ビルドには使わない。
 - `.github/dependabot.yml` の npm エコシステムで更新を確認する。更新 PR では `npm ci` と `npm run sync:htmx` を実行し、npm パッケージから同梱 JS を複製して ADR のバージョンとハッシュを更新する。
 - CI では `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で同梱 JS と ADR の差分がないことを確認し、`go test ./...`（`tests/` の統合テストを含む）を必須条件とする。
 
-SHA-256 (htmx.min.js 2.0.6):
-`b6768eed4f3af85b73a75054701bd60e17cac718aef2b7f6b254e5e0e2045616`
+SHA-256 (htmx.min.js 2.0.11):
+`d6fdc75f204e6bdefa99b69bf1e6d4ac69b8a364f77929f45c13476b4000f717`
 
 ## Consequences
 

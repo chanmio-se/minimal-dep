@@ -24,8 +24,9 @@ if (!/^\d+\.\d+\.\d+$/.test(version ?? "")) {
 if (!existsSync(installedPackagePath) || !existsSync(sourcePath)) {
   fail("node_modules/htmx.org is missing; run `npm ci` first");
 }
-if (JSON.parse(readFileSync(installedPackagePath, "utf8")).version !== version) {
-  fail(`installed htmx.org does not match the pinned version ${version}`);
+const installedVersion = JSON.parse(readFileSync(installedPackagePath, "utf8")).version;
+if (installedVersion !== version) {
+  fail(`installed htmx.org is ${installedVersion}, but package.json pins ${version}; run \`npm ci --ignore-scripts\``);
 }
 const lock = JSON.parse(readFileSync(packageLockPath, "utf8"));
 if (lock.packages?.["node_modules/htmx.org"]?.version !== version) {
@@ -43,13 +44,13 @@ if (!readFileSync(vendoredPath).equals(source)) {
 
 const adrBefore = readFileSync(adrPath, "utf8");
 const versionMatch = adrBefore.match(/HTMX `([^`]+)` を利用し/);
-const hashMatch = adrBefore.match(/SHA-256 \(htmx\.min\.js [^)]+\):\n`([^`]+)`/);
+const hashMatch = adrBefore.match(/SHA-256 \(htmx\.min\.js [^)]+\):\n`[^`]+`/);
 if (!versionMatch || !hashMatch) {
   fail("ADR-0001 does not contain the expected version and SHA-256 lines");
 }
 
 let adrAfter = adrBefore.replace(versionMatch[0], versionMatch[0].replace(versionMatch[1], version));
-adrAfter = adrAfter.replace(hashMatch[0], hashMatch[0].replace(hashMatch[1], checksum));
+adrAfter = adrAfter.replace(hashMatch[0], `SHA-256 (htmx.min.js ${version}):\n\`${checksum}\``);
 if (adrAfter !== adrBefore) {
   writeFileSync(adrPath, adrAfter);
   changed = true;
