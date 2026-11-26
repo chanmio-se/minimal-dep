@@ -1,0 +1,135 @@
+name: Sync vendored HTMX on Dependabot PR
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: sync-htmx-${{ github.event.workflow_run.head_branch || github.event.workflow_run.id }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync htmx.min.js and ADR hash
+    if: >-
+      ${{
+        github.event.workflow_run.event == 'pull_request' &&
+        github.event.workflow_run.actor.login == 'dependabot[bot]' &&
+        startsWith(github.event.workflow_run.head_branch || '', 'dependabot/npm_and_yarn/')
+      }}
+    runs-on: ubuntu-latest
+    steps:
+      # Run the trusted script from the default branch. PR files are read via
+      # the API and copied into the working tree only where they are needed.
+      - uses: actions/checkout@v7.0.1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '26.13.1'
+
+      - name: Resolve Dependabot PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          number=$(jq -r '(.pull_requests // [])[0].number // empty' "$GITHUB_EVENT_PATH")
+          if [ -z "$number" ]; then
+            number=$(gh api "repos/$GITHUB_REPOSITORY/commits/$HEAD_SHA/pulls" --jq '.[0].number // empty')
+          fi
+          if [ -z "$number" ]; then
+            echo "No pull request found for $HEAD_SHA"
+            exit 1
+          fi
+
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number")
+          author=$(jq -r '.user.login' <<< "$pr")
+          state=$(jq -r '.state' <<< "$pr")
+          head_repo=$(jq -r '.head.repo.full_name' <<< "$pr")
+          branch=$(jq -r '.head.ref' <<< "$pr")
+          sha=$(jq -r '.head.sha' <<< "$pr")
+
+          if [ "$author" != "dependabot[bot]" ] || [ "$state" != "open" ] || [ "$head_repo" != "$GITHUB_REPOSITORY" ]; then
+            echo "Skip: not an open same-repository Dependabot PR"
+            exit 0
+          fi
+          case "$branch" in
+            dependabot/npm_and_yarn/*) ;;
+            *)
+              echo "Skip: not an npm Dependabot branch"
+              exit 0
+              ;;
+          esac
+
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Sync vendored HTMX
+        id: sync
+        if: steps.pr.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_SHA: ${{ steps.pr.outputs.sha }}
+        run: |
+          set -euo pipefail
+
+          gh api -H 'Accept: application/vnd.github.raw' \
+            "repos/$GITHUB_REPOSITORY/contents/package.json?ref=$PR_SHA" > package.json
+          gh api -H 'Accept: application/vnd.github.raw' \
+            "repos/$GITHUB_REPOSITORY/contents/package-lock.json?ref=$PR_SHA" > package-lock.json
+
+          if ! git diff -- package.json package-lock.json | grep -q 'htmx.org'; then
+            echo "Skip: PR does not change htmx.org"
+            exit 0
+          fi
+
+          npm ci --ignore-scripts
+          npm run sync:htmx
+
+          mkdir -p "$RUNNER_TEMP/htmx-sync"
+          cp web/static/js/htmx.min.js "$RUNNER_TEMP/htmx-sync/htmx.min.js"
+          cp docs/decisions/0001-standard-library-and-htmx.md "$RUNNER_TEMP/htmx-sync/0001-standard-library-and-htmx.md"
+          echo "synced=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit synced files to Dependabot PR
+        if: steps.sync.outputs.synced == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          PR_BRANCH: ${{ steps.pr.outputs.branch }}
+        run: |
+          set -euo pipefail
+
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --no-tags origin "refs/pull/$PR_NUMBER/head"
+          git checkout --detach FETCH_HEAD
+
+          cp "$RUNNER_TEMP/htmx-sync/htmx.min.js" web/static/js/htmx.min.js
+          cp "$RUNNER_TEMP/htmx-sync/0001-standard-library-and-htmx.md" docs/decisions/0001-standard-library-and-htmx.md
+
+          files="web/static/js/htmx.min.js docs/decisions/0001-standard-library-and-htmx.md"
+          if git diff --quiet -- $files; then
+            echo "Vendored HTMX and ADR are already up to date"
+            exit 0
+          fi
+
+          git add $files
+          git -c user.name="github-actions[bot]" \
+            -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+            commit -m "chore: sync vendored HTMX"
+          git push origin "HEAD:refs/heads/$PR_BRANCH"
+
+          # GITHUB_TOKEN pushes do not start push/pull_request workflows. Run CI
+          # explicitly so the Dependabot PR is verified with the generated files.
+          gh workflow run ci.yml --ref "$PR_BRANCH"

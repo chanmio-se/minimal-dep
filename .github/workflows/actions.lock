@@ -8,6 +8,9 @@ workflows:
         - 'actions/setup-go@v7.1.0'
         - 'actions/setup-java@v6.3.0'
         - 'actions/setup-node@v7.1.0'
+    '.github/workflows/sync-dependabot-htmx.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'actions/setup-node@v7.1.0'
     '.github/workflows/verify-lockfile.yml':
         - 'actions/checkout@v7.0.1'
         - 'github/gh-actions-lock@verify/v0.5.1'

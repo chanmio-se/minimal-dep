@@ -13,7 +13,9 @@
 - 画面更新には HTMX を利用し、`web/static/js/htmx.min.js` に同梱する。バージョンは npm のロックファイルで固定する。
 - HTMX は外部 JavaScript ライブラリとして扱い、Go モジュールの依存には追加しない。
 - `package.json` と `package-lock.json` に `htmx.org` を devDependency として固定する。npm は同梱ファイルの更新時だけ使う開発ツールとし、アプリの実行時や通常の Go ビルドには使わない。
-- `.github/dependabot.yml` の npm エコシステムで更新を確認する。更新 PR では `npm ci` と `npm run sync:htmx` を実行し、npm パッケージから同梱 JS を複製して ADR のバージョンとハッシュを更新する。
+- `.github/dependabot.yml` の npm エコシステムで更新を確認する。`htmx.org` を含む更新 PR では、`.github/workflows/sync-dependabot-htmx.yml` が CI 完了後に `npm ci --ignore-scripts` と `npm run sync:htmx` を実行し、同梱 JS と ADR のハッシュを PR ブランチへコミットする。
+- 自動更新は `workflow_run` でデフォルトブランチのスクリプトを使い、PR のコードは checkout しない。`pull_request_target` で PR のコードを実行して書き込む方式は採らない。
+- 同期 workflow は `GITHUB_TOKEN` で push するため、続けて `workflow_dispatch` で CI を実行し、差分がないことと統合テストを確認する。
 - CI では `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で同梱 JS と ADR の差分がないことを確認し、`go test ./...`（`tests/` の統合テストを含む）を必須条件とする。
 
 SHA-256 (htmx.min.js):
@@ -23,5 +25,5 @@ SHA-256 (htmx.min.js):
 
 - 生成済み JS をコミットするため、単一バイナリで配布でき、フロントエンドのビルドは不要である。
 - 新しい Go 依存を追加する場合は ADR と `internal/linter/architecture` の承認リストを更新する必要がある。
-- Dependabot の npm 更新 PR だけでは同梱 JS と ADR は更新されない。PR 内で `npm run sync:htmx` を実行し、生成された差分をコミットする運用が必要である。
+- Dependabot の npm 更新 PR だけでは同梱 JS と ADR は更新されない。同期 workflow が生成差分を PR へコミットする。手動で更新する場合も同じコマンドを実行して差分をコミットする。
 - `node_modules/` はコミットしない。HTMX を更新する場合は、同梱 JS と ADR のハッシュを同じ変更に含め、統合テスト（`tests/`）で通常 HTML とフラグメントの両方を確認する。
