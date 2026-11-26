@@ -43,14 +43,12 @@ if (!readFileSync(vendoredPath).equals(source)) {
 }
 
 const adrBefore = readFileSync(adrPath, "utf8");
-const versionMatch = adrBefore.match(/HTMX `([^`]+)` を利用し/);
-const hashMatch = adrBefore.match(/SHA-256 \(htmx\.min\.js [^)]+\):\n`[^`]+`/);
-if (!versionMatch || !hashMatch) {
-  fail("ADR-0001 does not contain the expected version and SHA-256 lines");
+const hashMatch = adrBefore.match(/SHA-256 \(htmx\.min\.js(?: [^)]+)?\):\n`[^`]+`/);
+if (!hashMatch) {
+  fail("ADR-0001 does not contain the expected SHA-256 line");
 }
 
-let adrAfter = adrBefore.replace(versionMatch[0], versionMatch[0].replace(versionMatch[1], version));
-adrAfter = adrAfter.replace(hashMatch[0], `SHA-256 (htmx.min.js ${version}):\n\`${checksum}\``);
+const adrAfter = adrBefore.replace(hashMatch[0], `SHA-256 (htmx.min.js):\n\`${checksum}\``);
 if (adrAfter !== adrBefore) {
   writeFileSync(adrPath, adrAfter);
   changed = true;

@@ -84,7 +84,7 @@ Quint のモデル検査とトレース再生は `.github/workflows/ci.yml` で�
 
 GitHub Actions の依存は `.github/workflows/actions.lock` に固定しています。workflow の `uses:` を変更した場合は `gh actions-lock` を再実行し、生成された lockfile をコミットしてください。lockfile は手編集しません。`.github/workflows/verify-lockfile.yml` が push と pull request で整合性を検証します（ローカルでは `gh actions-lock --verify`）。`.github/dependabot.yml` がアクションの更新を確認し、lockfile も同じ PR で更新します。採用理由は [ADR-0005](docs/decisions/0005-actions-lockfile.md) を参照してください。
 
-HTMX は `package.json` / `package-lock.json` でバージョン固定しています。更新 PR では `npm ci --ignore-scripts` の後に `npm run sync:htmx` を実行し、`web/static/js/htmx.min.js` と [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md) のバージョン・ハッシュを同じ変更に含めてください。CI の `htmx` job が `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で差分がないことを確認し、`go test ./tests/...` も実行します。ローカルでも同じコマンドで確認できます。
+HTMX は `package.json` / `package-lock.json` でバージョン固定しています。更新 PR では `npm ci --ignore-scripts` の後に `npm run sync:htmx` を実行し、`web/static/js/htmx.min.js`を同じ変更に含めてください。CI の `htmx` job が `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で差分がないことを確認し、`go test ./tests/...` も実行します。ローカルでも同じコマンドで確認できます。
 
 ## モジュール追加
 
@@ -96,4 +96,4 @@ go run ./cmd/modulegen --name=widgets
 
 ## 依存関係
 
-Go の依存ライブラリはありません。HTMX `2.0.6` は `htmx.org` として npm の devDependency に固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製しています。npm は更新時の開発ツールだけで、アプリの実行時や通常の Go ビルドには不要です（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)）。
+Go の依存ライブラリはありません。HTMX は `htmx.org` として npm の devDependency に固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製しています。npm は更新時の開発ツールだけで、アプリの実行時や通常の Go ビルドには不要です（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)）。

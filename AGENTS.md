@@ -25,7 +25,7 @@
 - 通常リクエストには完全な HTML、HTMX リクエストにはフラグメントを返す。フォームは通常送信にフォールバックできる形を保つ。
 - POST / PUT / DELETE 相当のリクエストには常に CSRF トークンを要求する。
 - 外部 Go ライブラリは追加しない。追加する場合は ADR に採用理由を記録し、Linter の承認リストを更新する。
-- HTMX は `package.json` / `package-lock.json` でバージョン固定し、`npm run sync:htmx` で `web/static/js` に同梱する。更新時は ADR のバージョン・ハッシュも同じ変更に含め、E2E テスト結果を確認する。
+- HTMX は `package.json` / `package-lock.json` でバージョン固定し、`npm run sync:htmx` で `web/static/js` に同梱する。更新時は ADR のハッシュも同じ変更に含め、E2E テスト結果を確認する。
 - GitHub Actions の依存は `.github/workflows/actions.lock` で固定する。`uses:` を変更した場合は `gh actions-lock` を再実行し、lockfile を同じ変更に含める。lockfile は手編集しない。
 
 ## Verification
