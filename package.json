@@ -3,7 +3,7 @@
   "private": true,
   "description": "Development-only tooling for updating the vendored HTMX asset",
   "devDependencies": {
-    "htmx.org": "2.0.6"
+    "htmx.org": "2.0.11"
   },
   "scripts": {
     "sync:htmx": "node scripts/sync-htmx.mjs"
