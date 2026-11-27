@@ -35,13 +35,13 @@
 
 ```sh
 go build ./...
-go tool golangci-lint run ./...
+go tool golangci-lint custom
+./bin/custom-gcl run ./...
 go vet ./...
-go run ./cmd/archlint .
 go test ./...
 ```
 
-`archlint` はモジュール境界・レイヤー方向・依存方針・循環依存の Fitness Function を実装する。ルールの定義元は `internal/linter/architecture` であり、指示文ではなく Linter を更新する。実行時の振る舞い（通常 HTML / HTMX フラグメント / フォーム送信 / CSRF）は `tests/` の統合テストで検証する。
+`archlint` カスタム linter はモジュール境界・レイヤー方向・依存方針・SQL/HTML・セキュリティミドルウェアの Fitness Function を実装する。ルールの定義元は `internal/linter/architecture` であり、`tools/archlintplugin` は golangci-lint への薄いアダプタである。指示文ではなく Linter を更新する。`.custom-gcl.yml` の `version` は `go.mod` の golangci-lint tool バージョンと同じに保つ。実行時の振る舞い（通常 HTML / HTMX フラグメント / フォーム送信 / CSRF）は `tests/` の統合テストで検証する。
 
 workflow を変更した場合は `gh actions-lock --verify` も実行する。CI では `.github/workflows/verify-lockfile.yml` が同じ検査を pull request ごとに実行する。
 

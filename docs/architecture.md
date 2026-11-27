@@ -415,7 +415,7 @@ HTTP Status、Header、Response Body を検証する。
 1. Go 標準ライブラリで実現できる場合は標準ライブラリを使う
 2. 本番コードで認証・認可・暗号化など自前実装のリスクが高い分野に外部ライブラリを使う場合は、ADR と `internal/linter/architecture` の承認リストを揃える
 3. 本番コードで上記以外の外部ライブラリを追加する場合は、明確な利点がある場合にのみ ADR で採用理由を記録し、承認リストに追加する
-4. sqlc / golangci-lint / Quint / npm などの開発ツールは、実行バイナリに含まれない範囲で ADR と承認リストの対象外とし、用途とバージョンを固定して CI で検証する
+4. sqlc / golangci-lint / Quint / npm などの開発ツールは、実行バイナリに含まれない範囲で ADR と承認リストの対象外とし、用途とバージョンを固定して CI で検証する。golangci-lint プラグインの SDK は `tools/` 配下でのみ import する
 5. 小さな機能は標準ライブラリや既存の仕組みで実装し、大きなフレームワークは明確な利点がある場合に選択する
 6. JavaScript の依存関係は、機能上の利点を確認して必要なものを選択する
 7. 依存ライブラリの更新を自動検知できるようにする
@@ -537,7 +537,7 @@ AI エージェントが既存の設計意図を理解し、自律的に実装�
 
 ### Fitness Functions
 
-Fitness Function は、アーキテクチャが意図した性質を保っているかを継続的に判定する自動検査である。Linter と静的解析を CI で実行し、設計方針をコード変更のたびに検証できる状態にする。
+Fitness Function は、アーキテクチャが意図した性質を保っているかを継続的に判定する自動検査である。Linter と静的解析を CI で実行し、設計方針をコード変更のたびに検証できる状態にする。アーキテクチャのルールは `internal/linter/architecture` に定義し、golangci-lint のカスタム linter `archlint` として実行する（[ADR-0007](decisions/0007-golangci-lint-plugin.md)）。
 
 優先して検査する性質：
 
