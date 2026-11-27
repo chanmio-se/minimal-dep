@@ -21,6 +21,19 @@ jobs:
       - run: go vet ./...
       - run: go test ./...
 
+  e2e:
+    name: Browser E2E for HTMX
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-go@v7.1.0
+        with:
+          go-version-file: go.mod
+          cache: true
+      # rod uses an installed Chrome/Chromium when available and otherwise
+      # downloads its pinned Chromium, so no separate browser setup is needed.
+      - run: go test -tags=e2e ./tests/e2e/...
+
   quint:
     name: Quint specs and trace drivers
     runs-on: ubuntu-latest
@@ -69,5 +82,5 @@ jobs:
       - uses: actions/setup-go@v7.1.0
         with:
           go-version-file: go.mod
-      - name: Run integration tests
-        run: go test ./tests/...
+      - name: Run integration and browser E2E tests
+        run: go test -tags=e2e ./tests/...

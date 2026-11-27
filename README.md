@@ -13,6 +13,7 @@
 - golangci-lint のカスタム linter としてアーキテクチャとセキュリティの Fitness Function を検査する `archlint`
 - CSRF / Session / 入力検証 / 認可を標準経路とし、セキュリティテストを同梱
 - Quint による状態遷移セキュリティ特性の仕様化とトレース駆動テスト
+- rod による軽量なブラウザ E2E（HTMX のスワップ検証、Node / ChromeDriver 不要）
 - GitHub Actions の依存を lockfile で固定し、CI で検証
 - HTMX を npm の開発依存から同梱ファイルへ同期し、CI で整合性を検証
 
@@ -30,7 +31,7 @@ internal/platform 共通基盤（config / database / http / logging / templates�
 internal/modules 機能モジュール（identity / tasks）
 web/static        静的ファイル（HTMX 同梱）
 migrations        DB マイグレーション
-tests             モジュール横断の統合テスト / Quint トレースドライバー
+tests             モジュール横断の統合テスト / Quint トレースドライバー / ブラウザ E2E（tests/e2e）
 spec/quint        Quint の状態遷移モデル
 docs/decisions    設計判断の ADR
 scripts           HTMX 同梱ファイルの同期スクリプト
@@ -85,9 +86,11 @@ make lint
 
 Quint のモデル検査とトレース再生は `.github/workflows/ci.yml` で実行します。ローカルでのコマンドは [docs/quint.md](docs/quint.md) を参照してください。
 
+`make test`（`go test ./...`）はブラウザを使わずに実行できます。HTMX のスワップをブラウザで確認する場合は `make e2e`（`go test -tags=e2e ./tests/e2e/...`）を実行してください。インストール済みの Chrome / Chromium を優先し、見つからない場合は rod が Chromium をダウンロードします。CI の `e2e` job が常に実行し、`htmx` job は HTMX 同梱ファイルの同期結果と一緒に E2E を実行します。採用理由は [ADR-0008](docs/decisions/0008-browser-e2e-with-rod.md) を参照してください。
+
 GitHub Actions の依存は `.github/workflows/actions.lock` に固定しています。workflow の `uses:` を変更した場合は `gh actions-lock` を再実行し、生成された lockfile をコミットしてください。lockfile は手編集しません。`.github/workflows/verify-lockfile.yml` が push と pull request で整合性を検証します（ローカルでは `gh actions-lock --verify`）。`.github/dependabot.yml` がアクションの更新を確認し、lockfile も同じ PR で更新します。採用理由は [ADR-0005](docs/decisions/0005-actions-lockfile.md) を参照してください。
 
-HTMX は `package.json` / `package-lock.json` でバージョン固定しています。Dependabot が `htmx.org` の更新 PR を作ると、`.github/workflows/sync-dependabot-htmx.yml` が CI 完了後に `npm ci --ignore-scripts` と `npm run sync:htmx` を実行し、`web/static/js/htmx.min.js` と [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md) のハッシュを PR へコミットします。その後 `workflow_dispatch` で CI を再実行します。手動で更新する場合も同じコマンドを実行して差分をコミットしてください。CI の `htmx` job が `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で差分がないことを確認し、`go test ./tests/...` も実行します。
+HTMX は `package.json` / `package-lock.json` でバージョン固定しています。Dependabot が `htmx.org` の更新 PR を作ると、`.github/workflows/sync-dependabot-htmx.yml` が CI 完了後に `npm ci --ignore-scripts` と `npm run sync:htmx` を実行し、`web/static/js/htmx.min.js` と [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md) のハッシュを PR へコミットします。その後 `workflow_dispatch` で CI を再実行します。手動で更新する場合も同じコマンドを実行して差分をコミットしてください。CI の `htmx` job が `npm ci` → `npm run sync:htmx` → `git diff --exit-code` で差分がないことを確認し、`go test -tags=e2e ./tests/...` で統合テストとブラウザ E2E も実行します。
 
 ## モジュール追加
 
@@ -99,4 +102,4 @@ go run ./cmd/modulegen --name=widgets
 
 ## 依存関係
 
-本番のソースコード（`cmd/` / `internal/` / `web/` の実行パス）は、外部ライブラリへの依存を最小化する方針です。実行時は Go 標準ライブラリを基盤に単一バイナリで配布し、認証・認可・暗号化など自前実装のリスクが高い分野に限り、ADR で採用理由とリスク評価を記録して `internal/linter/architecture` の承認リストに追加したライブラリを使います。sqlc は生成時、golangci-lint と Quint は検証時、npm と `htmx.org` は HTMX 更新時の開発ツールで、これらは承認リストの対象外です。各ツールはバージョンを固定し、CI で検証します。sqlc の生成物は標準ライブラリだけを参照し、golangci-lint は Go tool として `go.mod` で管理します。HTMX は `scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製して同梱し、ブラウザ側で読み込みます。npm は更新時だけ使い、本番バイナリの依存には含めません（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md) と [ADR-0003](docs/decisions/0003-security.md)）。
+本番のソースコード（`cmd/` / `internal/` / `web/` の実行パス）は、外部ライブラリへの依存を最小化する方針です。実行時は Go 標準ライブラリを基盤に単一バイナリで配布し、認証・認可・暗号化など自前実装のリスクが高い分野に限り、ADR で採用理由とリスク評価を記録して `internal/linter/architecture` の承認リストに追加したライブラリを使います。sqlc は生成時、golangci-lint と Quint は検証時、rod はブラウザ E2E 時、npm と `htmx.org` は HTMX 更新時の開発ツールで、これらは承認リストの対象外です。rod は `tests/e2e/` からのみ import し、本番バイナリには含まれません。各ツールはバージョンを固定し、CI で検証します。sqlc の生成物は標準ライブラリだけを参照し、golangci-lint は Go tool として `go.mod` で管理します。HTMX は `scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製して同梱し、ブラウザ側で読み込みます。npm は更新時だけ使い、本番バイナリの依存には含めません（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)、[ADR-0003](docs/decisions/0003-security.md)、[ADR-0008](docs/decisions/0008-browser-e2e-with-rod.md)）。

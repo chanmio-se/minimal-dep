@@ -406,7 +406,7 @@ HTTP Status、Header、Response Body を検証する。
 - エラー時のレスポンスが適切であること
 - DOM の更新対象が期待どおりであること
 
-ブラウザ上での動作は Playwright 等による E2E テストで検証する。
+ブラウザ上での動作は rod による E2E テストで検証する。`tests/e2e/` に置き、`e2e` ビルドタグを付けて通常の `go test ./...` からは除外する。CI の `e2e` job と `htmx` job がタグ付きで実行する（ADR-0008）。
 
 ## 11. Dependency Policy
 
@@ -417,7 +417,7 @@ HTTP Status、Header、Response Body を検証する。
 1. Go 標準ライブラリで実現できる場合は標準ライブラリを使う
 2. 本番コードで認証・認可・暗号化など自前実装のリスクが高い分野に外部ライブラリを使う場合は、ADR と `internal/linter/architecture` の承認リストを揃える
 3. 本番コードで上記以外の外部ライブラリを追加する場合は、明確な利点がある場合にのみ ADR で採用理由を記録し、承認リストに追加する
-4. sqlc / golangci-lint / Quint / npm などの開発ツールは、実行バイナリに含まれない範囲で ADR と承認リストの対象外とし、用途とバージョンを固定して CI で検証する。golangci-lint プラグインの SDK は `tools/` 配下でのみ import する
+4. sqlc / golangci-lint / Quint / npm / ブラウザドライバなどの開発ツールは、実行バイナリに含まれない範囲で ADR と承認リストの対象外とし、用途とバージョンを固定して CI で検証する。golangci-lint プラグインの SDK は `tools/` 配下、ブラウザドライバは `tests/` 配下でのみ import する
 5. 小さな機能は標準ライブラリや既存の仕組みで実装し、大きなフレームワークは明確な利点がある場合に選択する
 6. JavaScript の依存関係は、機能上の利点を確認して必要なものを選択する
 7. 依存ライブラリの更新を自動検知できるようにする

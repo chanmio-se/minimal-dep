@@ -30,5 +30,5 @@
 - 新しいモジュールは追加設定なしでセキュリティ Middleware とテストパターンを継承できる。
 - Cookie を JavaScript から読まないため、HTMX 用のトークン注入を meta タグ + 共通スクリプトに限定する。
 - 静的ルールでは認可や CSRF の実行時挙動を証明できないため、統合テストを CI の必須条件として維持する。
-- 本番コードに承認ライブラリを追加する場合は、ADR と `internal/linter/architecture` の承認リストを同じ変更で更新する。承認リストにない import は `archlint` の `dependency-policy` で検出される。開発ツール専用の `tools/` 配下は承認リストの対象外とする（ADR-0007）。
+- 本番コードに承認ライブラリを追加する場合は、ADR と `internal/linter/architecture` の承認リストを同じ変更で更新する。承認リストにない import は `archlint` の `dependency-policy` で検出される。開発ツール専用の `tools/` と `tests/` 配下は承認リストの対象外とする（ADR-0007, ADR-0008）。
 - 設計変更時は Linter ルールとテストの両方を同じ変更単位で更新する。

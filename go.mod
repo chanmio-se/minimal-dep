@@ -5,6 +5,7 @@ go 1.24.0
 tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 
 require (
+	github.com/go-rod/rod v0.116.2
 	github.com/golangci/plugin-module-register v0.1.2
 	golang.org/x/tools v0.40.0
 )
@@ -195,6 +196,11 @@ require (
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.3.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.5 // indirect
+	github.com/ysmood/fetchup v0.2.3 // indirect
+	github.com/ysmood/goob v0.4.0 // indirect
+	github.com/ysmood/got v0.40.0 // indirect
+	github.com/ysmood/gson v0.7.3 // indirect
+	github.com/ysmood/leakless v0.9.0 // indirect
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.14.0 // indirect
 	go-simpler.org/sloglint v0.11.1 // indirect

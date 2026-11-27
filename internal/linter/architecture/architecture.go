@@ -24,8 +24,9 @@ const modulePath = "minimal-dep"
 var approvedExternalDependencies = map[string]bool{}
 
 // devToolPaths are development-only source trees. They are not part of the
-// production binary and may import tool APIs such as the linter plugin SDK.
-var devToolPaths = []string{"tools/"}
+// production binary and may import tool and test APIs such as the linter
+// plugin SDK or a browser driver.
+var devToolPaths = []string{"tools/", "tests/"}
 
 // Graph records module -> module edges through api packages.
 type Graph map[string]map[string]bool

@@ -1,4 +1,4 @@
-.PHONY: build run test lint quint migrate modulegen sqlc
+.PHONY: build run test e2e lint quint migrate modulegen sqlc
 
 build:
 	go build ./...
@@ -8,6 +8,9 @@ run:
 
 test:
 	go test ./...
+
+e2e:
+	go test -tags=e2e ./tests/e2e/...
 
 lint:
 	go tool golangci-lint custom
