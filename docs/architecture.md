@@ -182,7 +182,7 @@ Domain は HTTP、HTML、DB の実装詳細から独立させる。
 
 Repository は永続化の責務を持つ。
 
-初期バージョンでは `database/sql` を基本とし、ORM は必要性と採用理由を評価したうえで選択する。
+`database/sql` を実行時の境界とし、SQL クエリの型付きコード生成には sqlc を使う。sqlc の生成物は各モジュールの `repository` に置き、ドメイン型と sqlc 型の変換および `sql.ErrNoRows` の扱いはリポジトリアダプターに閉じ込める。マイグレーションは既存の埋め込み SQL ランナーが所有する。
 
 ## 4. HTMX Integration
 
@@ -294,6 +294,7 @@ JavaScript は必要な画面機能に絞って使う。
 │       └── js/
 │
 ├── migrations/                     # 適用順を一元管理する DB マイグレーション
+├── sqlc.yaml                       # sqlc の生成設定
 │
 ├── tests/                          # モジュール横断の統合テスト
 │
@@ -500,7 +501,7 @@ Quint は、状態遷移を伴うセキュリティ特性を仕様化し、モ�
 | View | html/template |
 | UI Interaction | HTMX |
 | Rendering | Server-side Rendering |
-| Database Access | database/sql |
+| Database Access | database/sql + sqlc |
 | Logging | log/slog |
 | Frontend Build | 原則不要 |
 | JavaScript | 最小限 |
