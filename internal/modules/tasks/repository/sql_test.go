@@ -80,9 +80,9 @@ func (s *fakeStmt) Close() error  { return nil }
 func (s *fakeStmt) NumInput() int { return -1 }
 func (s *fakeStmt) Exec(args []driver.Value) (driver.Result, error) {
 	if strings.Contains(s.query, "UPDATE tasks") {
-		done, _ := args[1].(bool)
+		done, _ := args[1].(int64)
 		fakeState.mu.Lock()
-		fakeState.done = done
+		fakeState.done = done != 0
 		fakeState.mu.Unlock()
 	}
 	return driver.RowsAffected(1), nil

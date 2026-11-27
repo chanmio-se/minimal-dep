@@ -1,0 +1,22 @@
+version: "2"
+
+sql:
+  - engine: "sqlite"
+    schema: "migrations"
+    queries: "internal/modules/identity/repository/queries"
+    gen:
+      go:
+        package: "repository"
+        out: "internal/modules/identity/repository"
+        sql_package: "database/sql"
+  - engine: "sqlite"
+    schema: "migrations"
+    queries: "internal/modules/tasks/repository/queries"
+    gen:
+      go:
+        package: "repository"
+        out: "internal/modules/tasks/repository"
+        sql_package: "database/sql"
+        overrides:
+          - column: "tasks.created_at"
+            go_type: "time.Time"
