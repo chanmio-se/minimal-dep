@@ -70,7 +70,7 @@ make test
 make lint
 ```
 
-`lint` は golangci-lint（実行ごとに最新バージョンを取得）、`go vet`、`go run ./cmd/archlint .` を実行します。golangci-lint は開発ツールとして実行し、Go モジュールの依存には追加しません。`archlint` は次を検査します。
+`lint` は Go tool として登録した golangci-lint、`go vet`、`go run ./cmd/archlint .` を実行します。golangci-lint のバージョンは `go.mod` で管理し、更新時は `go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@<version>` を実行します。`archlint` は次を検査します。
 
 - モジュール間依存が `api` を通ること
 - モジュール間の循環依存がないこと
@@ -96,4 +96,4 @@ go run ./cmd/modulegen --name=widgets
 
 ## 依存関係
 
-Go の依存ライブラリはありません。HTMX は `htmx.org` として npm の devDependency に固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製しています。npm は更新時の開発ツールだけで、アプリの実行時や通常の Go ビルドには不要です（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)）。
+アプリケーションの実行時に使う Go 依存ライブラリはありません。golangci-lint は Go tool として `go.mod` で管理する開発依存です。HTMX は `htmx.org` として npm の devDependency に固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製しています。npm は更新時の開発ツールだけで、アプリの実行時や通常の Go ビルドには不要です（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)）。
