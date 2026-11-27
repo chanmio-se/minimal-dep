@@ -17,8 +17,10 @@ import (
 
 const modulePath = "minimal-dep"
 
-// approvedExternalDependencies records approved non-standard Go modules.
-// The initial framework intentionally uses only the standard library.
+// approvedExternalDependencies records approved non-standard Go modules that
+// production source may import. Tool dependencies such as golangci-lint are
+// declared in go.mod but are not imports, so they are not listed here. The
+// initial framework uses only the standard library in production.
 var approvedExternalDependencies = map[string]bool{}
 
 // Violation is one failed fitness function.

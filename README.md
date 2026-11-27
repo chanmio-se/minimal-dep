@@ -1,6 +1,6 @@
 # minimal-dep
 
-Go と HTMX による軽量 Web フレームワークの雛形。[docs/architecture.md](docs/architecture.md) の設計に従った Modular Monolith 構成です。
+本番のソースコードは外部ライブラリへの依存を最小限に抑え、認証・認可・暗号化など安全上重要な分野だけに承認済みライブラリを使うことを目指した、Go と HTMX による軽量 Web フレームワークの雛形です。実行時は Go 標準ライブラリを基盤に単一バイナリを構成し、HTMX は更新用の npm 依存から生成した JS を同梱します。[docs/architecture.md](docs/architecture.md) の設計に従った Modular Monolith 構成です。
 
 ## 特徴
 
@@ -8,6 +8,7 @@ Go と HTMX による軽量 Web フレームワークの雛形。[docs/architect
 - `html/template` によるサーバーサイドレンダリング（レイアウト / ページ / フラグメント）
 - `HX-Request` に基づく HTML フラグメントの返却
 - `database/sql` と sqlc による型付きクエリ、`log/slog`
+- 本番コードの外部依存を最小化し、認証・認可・暗号化は ADR で承認したライブラリを例外的に利用
 - モジュールごとの境界と、Composition Root による明示的な依存注入
 - アーキテクチャとセキュリティの Fitness Function を検査する `archlint`
 - CSRF / Session / 入力検証 / 認可を標準経路とし、セキュリティテストを同梱
@@ -96,4 +97,4 @@ go run ./cmd/modulegen --name=widgets
 
 ## 依存関係
 
-実行時の Go 依存は標準ライブラリのみです。sqlc は生成時の開発ツールで、生成物も標準ライブラリだけを参照します。golangci-lint は Go tool として `go.mod` で管理する開発依存です。HTMX は `htmx.org` として npm の devDependency に固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製しています。npm は更新時の開発ツールだけで、アプリの実行時や通常の Go ビルドには不要です（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)）。
+本番のソースコード（`cmd/` / `internal/` / `web/` の実行パス）は、外部ライブラリへの依存を最小化する方針です。実行時は Go 標準ライブラリを基盤に単一バイナリで配布し、認証・認可・暗号化など自前実装のリスクが高い分野に限り、ADR で採用理由とリスク評価を記録して `internal/linter/architecture` の承認リストに追加したライブラリを使います。sqlc は生成時、golangci-lint と Quint は検証時、npm と `htmx.org` は HTMX 更新時の開発ツールで、これらは承認リストの対象外です。各ツールはバージョンを固定し、CI で検証します。sqlc の生成物は標準ライブラリだけを参照し、golangci-lint は Go tool として `go.mod` で管理します。HTMX は `scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製して同梱し、ブラウザ側で読み込みます。npm は更新時だけ使い、本番バイナリの依存には含めません（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md) と [ADR-0003](docs/decisions/0003-security.md)）。

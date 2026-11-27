@@ -24,7 +24,8 @@
 - HTMX 判定とレスポンス選択は `internal/platform/http/htmx` に集約し、Handler から利用する。
 - 通常リクエストには完全な HTML、HTMX リクエストにはフラグメントを返す。フォームは通常送信にフォールバックできる形を保つ。
 - POST / PUT / DELETE 相当のリクエストには常に CSRF トークンを要求する。
-- 外部 Go ライブラリは追加しない。追加する場合は ADR に採用理由を記録し、Linter の承認リストを更新する。
+- 本番コードが外部 Go ライブラリを import する場合は ADR に採用理由とリスク評価を記録し、Linter の承認リストを更新する。認証・認可・暗号化など自前実装のリスクが高い分野は例外として承認ライブラリを使ってよい。
+- sqlc / golangci-lint / Quint / npm などの開発ツールは実行バイナリに含まれないため承認リストの対象外とし、用途とバージョンを固定して CI で検証する。
 - HTMX は `package.json` / `package-lock.json` でバージョン固定し、`npm run sync:htmx` で `web/static/js` に同梱する。更新時は E2E テスト結果を確認する。Dependabot の npm 更新 PR では `.github/workflows/sync-dependabot-htmx.yml` が同期結果を PR ブランチへコミットする。
 - GitHub Actions の依存は `.github/workflows/actions.lock` で固定する。`uses:` を変更した場合は `gh actions-lock` を再実行し、lockfile を同じ変更に含める。lockfile は手編集しない。
 
