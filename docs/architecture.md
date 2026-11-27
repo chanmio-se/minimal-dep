@@ -2,6 +2,8 @@
 
 # Go + HTMX Web Framework
 
+![Go + HTMX フレームワークのアーキテクチャ概要](project-concept.svg)
+
 ## 1. Overview
 
 本フレームワークは、Go と HTMX を利用して、シンプルで保守性の高い Web アプリケーションを構築するための軽量フレームワークである。
