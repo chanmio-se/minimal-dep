@@ -1,4 +1,4 @@
-.PHONY: build run test lint quint migrate modulegen
+.PHONY: build run test lint quint migrate modulegen sqlc
 
 build:
 	go build ./...
@@ -27,3 +27,6 @@ migrate:
 modulegen:
 	@test -n "$(NAME)" || (echo "usage: make modulegen NAME=<name>" && exit 1)
 	go run ./cmd/modulegen --name=$(NAME)
+
+sqlc:
+	sqlc generate

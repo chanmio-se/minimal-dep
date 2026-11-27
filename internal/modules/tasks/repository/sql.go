@@ -5,27 +5,25 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"minimal-dep/internal/modules/tasks/domain"
 )
 
-const selectColumns = `SELECT id, owner_id, title, done, created_at FROM tasks`
-
 // SQL persists tasks with database/sql. The driver is chosen by the
 // composition root; queries use portable '?' placeholders.
 type SQL struct {
-	db *sql.DB
+	queries *Queries
 }
 
 // NewSQL builds a SQL-backed repository.
-func NewSQL(db *sql.DB) *SQL { return &SQL{db: db} }
+func NewSQL(db *sql.DB) *SQL { return &SQL{queries: New(db)} }
 
 // Create inserts a task.
 func (r *SQL) Create(ctx context.Context, task domain.Task) error {
-	_, err := r.db.ExecContext(ctx,
-		`INSERT INTO tasks (id, owner_id, title, done, created_at) VALUES (?, ?, ?, ?, ?)`,
-		task.ID, task.OwnerID, task.Title, task.Done, task.CreatedAt)
+	err := r.queries.CreateTask(ctx, CreateTaskParams{
+		ID: task.ID, OwnerID: task.OwnerID, Title: task.Title,
+		Done: boolToInt64(task.Done), CreatedAt: task.CreatedAt,
+	})
 	if err != nil {
 		return fmt.Errorf("insert task: %w", err)
 	}
@@ -34,61 +32,51 @@ func (r *SQL) Create(ctx context.Context, task domain.Task) error {
 
 // ListByOwner returns the owner's tasks in chronological order.
 func (r *SQL) ListByOwner(ctx context.Context, ownerID string) ([]domain.Task, error) {
-	rows, err := r.db.QueryContext(ctx, selectColumns+` WHERE owner_id = ? ORDER BY created_at, id`, ownerID)
+	rows, err := r.queries.ListTasksByOwner(ctx, ownerID)
 	if err != nil {
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
-	defer func() { _ = rows.Close() }()
-
 	tasks := make([]domain.Task, 0)
-	for rows.Next() {
-		task, err := scanTask(rows)
-		if err != nil {
-			return nil, err
-		}
-		tasks = append(tasks, task)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("iterate tasks: %w", err)
+	for _, row := range rows {
+		tasks = append(tasks, toDomainTask(row))
 	}
 	return tasks, nil
 }
 
 // FindByID returns a task by ID.
 func (r *SQL) FindByID(ctx context.Context, id string) (domain.Task, error) {
-	task, err := scanTask(r.db.QueryRowContext(ctx, selectColumns+` WHERE id = ?`, id))
+	task, err := r.queries.FindTaskByID(ctx, id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return domain.Task{}, ErrNotFound
 	}
 	if err != nil {
 		return domain.Task{}, fmt.Errorf("find task: %w", err)
 	}
-	return task, nil
+	return toDomainTask(task), nil
 }
 
 // Save updates a stored task.
 func (r *SQL) Save(ctx context.Context, task domain.Task) error {
-	_, err := r.db.ExecContext(ctx,
-		`UPDATE tasks SET title = ?, done = ?, created_at = ? WHERE id = ?`,
-		task.Title, task.Done, task.CreatedAt, task.ID)
+	err := r.queries.SaveTask(ctx, SaveTaskParams{
+		Title: task.Title, Done: boolToInt64(task.Done),
+		CreatedAt: task.CreatedAt, ID: task.ID,
+	})
 	if err != nil {
 		return fmt.Errorf("update task: %w", err)
 	}
 	return nil
 }
 
-type scanner interface {
-	Scan(dest ...any) error
+func toDomainTask(task Task) domain.Task {
+	return domain.Task{
+		ID: task.ID, OwnerID: task.OwnerID, Title: task.Title,
+		Done: task.Done != 0, CreatedAt: task.CreatedAt,
+	}
 }
 
-func scanTask(row scanner) (domain.Task, error) {
-	var task domain.Task
-	var done int
-	var createdAt time.Time
-	if err := row.Scan(&task.ID, &task.OwnerID, &task.Title, &done, &createdAt); err != nil {
-		return domain.Task{}, err
+func boolToInt64(value bool) int64 {
+	if value {
+		return 1
 	}
-	task.Done = done != 0
-	task.CreatedAt = createdAt
-	return task, nil
+	return 0
 }
