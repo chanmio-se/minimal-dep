@@ -7,7 +7,7 @@ Go と HTMX による軽量 Web フレームワークの雛形。[docs/architect
 - `net/http.ServeMux` による明示的なルーティング
 - `html/template` によるサーバーサイドレンダリング（レイアウト / ページ / フラグメント）
 - `HX-Request` に基づく HTML フラグメントの返却
-- `database/sql` と `log/slog`（外部 Go 依存なし）
+- `database/sql` と sqlc による型付きクエリ、`log/slog`
 - モジュールごとの境界と、Composition Root による明示的な依存注入
 - アーキテクチャとセキュリティの Fitness Function を検査する `archlint`
 - CSRF / Session / 入力検証 / 認可を標準経路とし、セキュリティテストを同梱
@@ -60,7 +60,7 @@ curl -i http://localhost:8080/healthz
 | `REQUEST_TIMEOUT` | `10s` | リクエスト全体の上限 |
 | `SHUTDOWN_TIMEOUT` | `10s` | Graceful Shutdown の上限 |
 
-DB を使う場合はドライバをアプリケーションに登録し、`go run ./cmd/migrate` でマイグレーションを適用します。リポジトリの SQL は `?` プレースホルダーを使うため、SQLite / MySQL 互換のドライバを想定しています（PostgreSQL を使う場合は `$1` 形式への変更が必要です）。
+DB を使う場合は SQLite ドライバをアプリケーションに登録し、`go run ./cmd/migrate` でマイグレーションを適用します。SQL クエリは `sqlc` で生成し、各モジュールの `repository` 配下に配置します。生成コードを更新するには sqlc をインストールして `make sqlc` を実行します。DB 未設定時は引き続きメモリリポジトリで動作します。
 
 ## 検証
 
@@ -96,4 +96,4 @@ go run ./cmd/modulegen --name=widgets
 
 ## 依存関係
 
-Go の依存ライブラリはありません。HTMX は `htmx.org` として npm の devDependency に固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製しています。npm は更新時の開発ツールだけで、アプリの実行時や通常の Go ビルドには不要です（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)）。
+実行時の Go 依存は標準ライブラリのみです。sqlc は生成時の開発ツールで、生成物も標準ライブラリだけを参照します。HTMX は `htmx.org` として npm の devDependency に固定し、`scripts/sync-htmx.mjs` で `web/static/js/htmx.min.js` に複製しています。npm は更新時の開発ツールだけで、アプリの実行時や通常の Go ビルドには不要です（採用理由は [ADR-0001](docs/decisions/0001-standard-library-and-htmx.md)）。
