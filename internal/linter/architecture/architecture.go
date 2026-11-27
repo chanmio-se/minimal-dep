@@ -23,6 +23,18 @@ const modulePath = "minimal-dep"
 // initial framework uses only the standard library in production.
 var approvedExternalDependencies = map[string]bool{}
 
+// devToolPaths are development-only source trees. They are not part of the
+// production binary and may import tool APIs such as the linter plugin SDK.
+var devToolPaths = []string{"tools/"}
+
+// Graph records module -> module edges through api packages.
+type Graph map[string]map[string]bool
+
+// NewGraph creates an empty module dependency graph.
+func NewGraph() Graph {
+	return make(Graph)
+}
+
 // Violation is one failed fitness function.
 type Violation struct {
 	Path    string
@@ -51,7 +63,7 @@ var allowedLayerImports = map[string]map[string]bool{
 // Lint checks all Go files below root and returns every violation found.
 func Lint(root string) ([]Violation, error) {
 	var violations []Violation
-	graph := make(map[string]map[string]bool)
+	graph := NewGraph()
 	modules := make(map[string]bool)
 
 	err := filepath.WalkDir(root, func(path string, entry fs.DirEntry, err error) error {
@@ -78,8 +90,8 @@ func Lint(root string) ([]Violation, error) {
 		if err != nil {
 			return fmt.Errorf("parse %s: %w", rel, err)
 		}
-		violations = append(violations, checkSecurity(rel, fset, file)...)
-		module, layer := classify(rel)
+		violations = append(violations, CheckSecurity(rel, fset, file)...)
+		module, layer := Classify(rel)
 		if module != "" {
 			modules[module] = true
 		}
@@ -89,7 +101,7 @@ func Lint(root string) ([]Violation, error) {
 				continue
 			}
 			line := fset.Position(spec.Pos()).Line
-			violations = append(violations, checkImport(rel, line, module, layer, importPath, graph)...)
+			violations = append(violations, CheckImport(rel, line, module, layer, importPath, graph)...)
 		}
 		return nil
 	})
@@ -97,15 +109,16 @@ func Lint(root string) ([]Violation, error) {
 		return nil, err
 	}
 
-	violations = append(violations, findCycles(graph, modules)...)
-	violations = append(violations, checkSecurityComposition(root)...)
+	violations = append(violations, FindCycles(graph, modules)...)
+	violations = append(violations, CheckSecurityComposition(root)...)
 	return violations, nil
 }
 
 // checkSecurity implements the static security fitness functions: HTML must
 // be rendered through html/template, and SQL calls must not concatenate query
 // text from expressions other than literals and constants.
-func checkSecurity(rel string, fset *token.FileSet, file *ast.File) []Violation {
+// CheckSecurity applies the static security fitness functions to one file.
+func CheckSecurity(rel string, fset *token.FileSet, file *ast.File) []Violation {
 	var violations []Violation
 	add := func(node ast.Node, rule, message string) {
 		violations = append(violations, Violation{
@@ -165,7 +178,8 @@ func safeSQLExpr(expr ast.Expr) bool {
 
 // checkSecurityComposition verifies that the standard HTTP chain includes the
 // security middleware required by the architecture.
-func checkSecurityComposition(root string) []Violation {
+// CheckSecurityComposition verifies the composition root's middleware chain.
+func CheckSecurityComposition(root string) []Violation {
 	path := filepath.Join(root, "internal", "app", "app.go")
 	src, err := os.ReadFile(path)
 	if err != nil {
@@ -204,7 +218,8 @@ func checkSecurityComposition(root string) []Violation {
 	return violations
 }
 
-func classify(rel string) (module, layer string) {
+// Classify returns the module and layer of a repository-relative path.
+func Classify(rel string) (module, layer string) {
 	parts := strings.Split(rel, "/")
 	if len(parts) < 3 || parts[0] != "internal" || parts[1] != "modules" {
 		return "", ""
@@ -216,13 +231,15 @@ func classify(rel string) (module, layer string) {
 	return module, parts[3]
 }
 
-func checkImport(rel string, line int, module, layer, importPath string, graph map[string]map[string]bool) []Violation {
+// CheckImport applies the import rules to one import spec and records any
+// cross-module api edge in graph.
+func CheckImport(rel string, line int, module, layer, importPath string, graph Graph) []Violation {
 	var violations []Violation
 	add := func(rule, message string) {
 		violations = append(violations, Violation{Path: rel, Line: line, Rule: rule, Message: message})
 	}
 
-	if first := strings.Split(importPath, "/")[0]; strings.Contains(first, ".") && !approvedExternalDependencies[importPath] {
+	if first := strings.Split(importPath, "/")[0]; strings.Contains(first, ".") && !approvedExternalDependencies[importPath] && !isDevTool(rel) {
 		add("dependency-policy", fmt.Sprintf("unapproved external dependency %q", importPath))
 	}
 
@@ -262,7 +279,17 @@ func checkImport(rel string, line int, module, layer, importPath string, graph m
 	return violations
 }
 
-func findCycles(graph map[string]map[string]bool, modules map[string]bool) []Violation {
+func isDevTool(rel string) bool {
+	for _, prefix := range devToolPaths {
+		if strings.HasPrefix(rel, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// FindCycles reports cycles in the recorded module dependency graph.
+func FindCycles(graph Graph, modules map[string]bool) []Violation {
 	names := make([]string, 0, len(modules))
 	for name := range modules {
 		names = append(names, name)

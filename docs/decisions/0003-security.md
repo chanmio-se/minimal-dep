@@ -22,7 +22,7 @@
   Handler は形式・サイズを検証し、Domain は業務上の不変条件を検証する。
 - SQL はプレースホルダー、HTML は `html/template` を標準経路とし、内部エラーの詳細はログにのみ記録する。
 - 認証・認可・暗号化は標準ライブラリで十分な場合は標準ライブラリを使う。パスワードハッシュやトークン検証など自前実装のリスクが高い処理に限り、別 ADR で採用理由とリスク評価を記録したライブラリを例外として使う。
-- `cmd/archlint` に `sql-parameterized` / `html-template-only` / `security-middleware` を追加する。
+- `archlint` カスタム linter に `sql-parameterized` / `html-template-only` / `security-middleware` を追加する。
   振る舞いは `tests/` の統合テストと各パッケージの単体テストで検証し、Generator も同じパターンを生成する。
 
 ## Consequences
@@ -30,5 +30,5 @@
 - 新しいモジュールは追加設定なしでセキュリティ Middleware とテストパターンを継承できる。
 - Cookie を JavaScript から読まないため、HTMX 用のトークン注入を meta タグ + 共通スクリプトに限定する。
 - 静的ルールでは認可や CSRF の実行時挙動を証明できないため、統合テストを CI の必須条件として維持する。
-- 本番コードに承認ライブラリを追加する場合は、ADR と `internal/linter/architecture` の承認リストを同じ変更で更新する。承認リストにない import は `archlint` の `dependency-policy` で検出される。
+- 本番コードに承認ライブラリを追加する場合は、ADR と `internal/linter/architecture` の承認リストを同じ変更で更新する。承認リストにない import は `archlint` の `dependency-policy` で検出される。開発ツール専用の `tools/` 配下は承認リストの対象外とする（ADR-0007）。
 - 設計変更時は Linter ルールとテストの両方を同じ変更単位で更新する。

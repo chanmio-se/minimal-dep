@@ -10,7 +10,7 @@
 - `database/sql` と sqlc による型付きクエリ、`log/slog`
 - 本番コードの外部依存を最小化し、認証・認可・暗号化は ADR で承認したライブラリを例外的に利用
 - モジュールごとの境界と、Composition Root による明示的な依存注入
-- アーキテクチャとセキュリティの Fitness Function を検査する `archlint`
+- golangci-lint のカスタム linter としてアーキテクチャとセキュリティの Fitness Function を検査する `archlint`
 - CSRF / Session / 入力検証 / 認可を標準経路とし、セキュリティテストを同梱
 - Quint による状態遷移セキュリティ特性の仕様化とトレース駆動テスト
 - GitHub Actions の依存を lockfile で固定し、CI で検証
@@ -22,7 +22,9 @@
 cmd/server        アプリケーション起動
 cmd/migrate       DB マイグレーション適用
 cmd/modulegen     モジュール雛形生成
-cmd/archlint      アーキテクチャ検査
+cmd/archlint      アーキテクチャ検査（ standalone 実行用）
+tools/archlintplugin  golangci-lint カスタム linter のアダプタ
+internal/linter/architecture  Fitness Function のルール定義
 internal/app      Composition Root
 internal/platform 共通基盤（config / database / http / logging / templates）
 internal/modules 機能モジュール（identity / tasks）
@@ -71,7 +73,7 @@ make test
 make lint
 ```
 
-`lint` は Go tool として登録した golangci-lint、`go vet`、`go run ./cmd/archlint .` を実行します。golangci-lint のバージョンは `go.mod` で管理し、更新時は `go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@<version>` を実行します。`archlint` は次を検査します。
+`lint` は Go tool として登録した golangci-lint からカスタムバイナリをビルドし（`go tool golangci-lint custom` → `./bin/custom-gcl run ./...`）、続けて `go vet` を実行します。golangci-lint のバージョンは `go.mod` と `.custom-gcl.yml` の両方で固定し、更新時は `go get -tool github.com/golangci/golangci-lint/v2/cmd/golangci-lint@<version>` と `.custom-gcl.yml` の `version` を同じ値にします。ルール本体は `internal/linter/architecture` にあり、`tools/archlintplugin` が golangci-lint へ渡すだけのアダプタです。`cmd/archlint` はカスタムバイナリを使わない場合の standalone 実行用に残しています。採用理由は [ADR-0007](docs/decisions/0007-golangci-lint-plugin.md) を参照してください。`archlint` は次を検査します。
 
 - モジュール間依存が `api` を通ること
 - モジュール間の循環依存がないこと

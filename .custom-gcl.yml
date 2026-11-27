@@ -1,0 +1,7 @@
+version: v2.8.0
+name: custom-gcl
+destination: bin
+plugins:
+  - module: minimal-dep
+    import: minimal-dep/tools/archlintplugin
+    path: .
