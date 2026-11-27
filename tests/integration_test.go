@@ -66,7 +66,7 @@ func request(t *testing.T, client *http.Client, method, target string, form url.
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -181,7 +181,6 @@ func TestFullFlowWithHTMXAndFallback(t *testing.T) {
 	if match == nil {
 		t.Fatalf("task id not found in body: %q", body)
 	}
-	token = csrfToken(t, body)
 
 	status, body, _ = request(t, client, "GET", server.URL+"/tasks", nil, true)
 	if status != http.StatusOK || !strings.Contains(body, `id="task-list"`) || strings.Contains(body, "<!doctype html>") {

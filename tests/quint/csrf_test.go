@@ -18,7 +18,7 @@ func TestCSRFTrace(t *testing.T) {
 	tr := loadTrace(t, "csrf")
 	final := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == http.MethodGet {
-			fmt.Fprint(w, middleware.CSRFToken(r.Context()))
+			_, _ = fmt.Fprint(w, middleware.CSRFToken(r.Context()))
 			return
 		}
 		w.WriteHeader(http.StatusNoContent)

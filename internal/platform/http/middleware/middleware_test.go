@@ -76,7 +76,7 @@ func TestCSRF(t *testing.T) {
 	var seen string
 	h := CSRF(false)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = CSRFToken(r.Context())
-		fmt.Fprint(w, seen)
+		_, _ = fmt.Fprint(w, seen)
 	}))
 
 	rec := httptest.NewRecorder()
@@ -158,7 +158,7 @@ func TestAuth(t *testing.T) {
 	public := func(r *http.Request) bool { return r.URL.Path == "/login" }
 	h := Auth(resolve, public)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		p, _ := PrincipalFrom(r.Context())
-		fmt.Fprint(w, p.ID)
+		_, _ = fmt.Fprint(w, p.ID)
 	}))
 
 	rec := httptest.NewRecorder()

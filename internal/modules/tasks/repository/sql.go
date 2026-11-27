@@ -36,7 +36,6 @@ func (r *SQL) ListByOwner(ctx context.Context, ownerID string) ([]domain.Task, e
 	if err != nil {
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
-
 	tasks := make([]domain.Task, 0)
 	for _, row := range rows {
 		tasks = append(tasks, toDomainTask(row))
