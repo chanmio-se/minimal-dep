@@ -38,7 +38,7 @@ func (r *SQL) ListByOwner(ctx context.Context, ownerID string) ([]domain.Task, e
 	if err != nil {
 		return nil, fmt.Errorf("list tasks: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	tasks := make([]domain.Task, 0)
 	for rows.Next() {

@@ -70,7 +70,7 @@ make test
 make lint
 ```
 
-`lint` は `go vet` と `go run ./cmd/archlint .` を実行します。`archlint` は次を検査します。
+`lint` は golangci-lint（実行ごとに最新バージョンを取得）、`go vet`、`go run ./cmd/archlint .` を実行します。golangci-lint は開発ツールとして実行し、Go モジュールの依存には追加しません。`archlint` は次を検査します。
 
 - モジュール間依存が `api` を通ること
 - モジュール間の循環依存がないこと

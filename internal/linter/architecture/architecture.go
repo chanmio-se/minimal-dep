@@ -129,7 +129,7 @@ func checkSecurity(rel string, fset *token.FileSet, file *ast.File) []Violation 
 		if !ok {
 			return true
 		}
-		queryArg := -1
+		queryArg := 0
 		switch sel.Sel.Name {
 		case "Exec", "Query", "QueryRow":
 			queryArg = 0

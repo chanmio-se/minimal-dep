@@ -30,6 +30,6 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 	return database.Migrate(context.Background(), db, migrations.Files, "*.sql")
 }
